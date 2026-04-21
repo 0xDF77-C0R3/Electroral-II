@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electroral!</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        /* Palette Aurora Nord e adattamenti Accessibilità */
+        :root {
+            --bg-color: #d08770; 
+            --text-main: #2e3440; 
+            
+            --card-bg: #e5e9f0; 
+            --panel-border: #d8dee9; 
+            --shadow-color: rgba(0,0,0,0.2);
+
+            --dore-nord: #bf616a;
+            --sanna-nord: #5e81ac;
+            --piccari-nord: #a3be8c;
+            --bianca-nord: #ebcb8b;
+
+            --control-nord: #b48ead;
+            --unassigned-voter-bg: #d8dee9; 
+            
+            --text-on-accent: #f2f2f2; 
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: 5px; color: #000000; text-shadow: none; }
+        .subtitle { color: #000000; margin-top: 0; margin-bottom: 20px; font-size: 1rem; font-weight: 500;}
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .control-bar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            width: 100%;
+            max-width: 900px;
+            margin-bottom: 10px;
+        }
+
+        .stats-panel {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 4px 15px var(--shadow-color);
+        }
+
+        .stat-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 15px;
+        }
+        .stat-row:last-child { margin-bottom: 0; }
+
+        .stat-label { width: 140px; font-weight: 700; font-size: 0.95rem; text-align: right; color: #2e3440;}
+        .stat-bar-bg {
+            flex-grow: 1;
+            height: 14px;
+            background-color: #d8dee9; 
+            border-radius: 7px;
+            overflow: hidden;
+        }
+        .stat-bar-fill {
+            height: 100%;
+            border-radius: 7px;
+            transition: width 0.3s ease;
+        }
+        .stat-value { width: 100px; text-align: right; font-weight: 700; font-size: 0.95rem; color: #000000;}
+
+        .dore-fill { background-color: var(--dore-nord); }
+        .sanna-fill { background-color: var(--sanna-nord); }
+        .piccari-fill { background-color: var(--piccari-nord); }
+        .bianca-fill { background-color: var(--bianca-nord); }
+
+        .unassigned-count {
+            text-align: center;
+            font-weight: 700;
+            color: #4c566a; 
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid var(--panel-border);
+        }
+
+        .urns-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .urna {
+            background-color: var(--card-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            min-height: 300px;
+            box-shadow: 0 4px 10px var(--shadow-color);
+        }
+
+        .urna h3 {
+            margin: 0 0 15px 0;
+            font-size: 1.25rem;
+            font-weight: 700;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--panel-border);
+        }
+
+        #urna-dore h3 { border-bottom-color: var(--dore-nord); color: var(--dore-nord); }
+        #urna-sanna h3 { border-bottom-color: var(--sanna-nord); color: var(--sanna-nord); }
+        #urna-piccari h3 { border-bottom-color: var(--piccari-nord); color: var(--piccari-nord); }
+        #urna-bianca h3 { border-bottom-color: var(--bianca-nord); color: var(--bianca-nord); }
+        #urna-unassigned h3 { border-bottom-color: var(--panel-border); color: #000000; }
+
+        .voter-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+        }
+
+        .voter-card {
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: var(--unassigned-voter-bg);
+            color: #2e3440;
+            user-select: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .voter-card:hover { border-color: #88c0d0; background-color: #f0f4f8; } 
+        
+        .voter-name { font-weight: 600; text-align: center; font-size: 0.95rem; }
+
+        .assigned-dore { background-color: var(--dore-nord); color: var(--text-on-accent); border: none; }
+        .assigned-sanna { background-color: var(--sanna-nord); color: var(--text-on-accent); border: none; }
+        .assigned-piccari { background-color: var(--piccari-nord); color: var(--text-on-accent); border: none; }
+        .assigned-bianca { background-color: var(--bianca-nord); color: #000000; border: none; }
+
+        .action-buttons {
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 10px;
+        }
+        .voter-card.expanded .action-buttons { display: flex; }
+
+        .btn {
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn:hover { opacity: 0.85; }
+        
+        .btn-d { background-color: var(--dore-nord); color: var(--text-on-accent); }
+        .btn-s { background-color: var(--sanna-nord); color: var(--text-on-accent); }
+        .btn-p { background-color: var(--piccari-nord); color: var(--text-on-accent); }
+        .btn-b { background-color: var(--bianca-nord); color: #000000; }
+
+        .btn-control {
+            background-color: var(--control-nord);
+            color: var(--text-on-accent);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: background-color 0.2s;
+        }
+        .btn-control:hover { background-color: #9c7ba3; } 
+
+    </style>
+</head>
+<body>
+
+    <div class="control-bar">
+        <button id="reset-btn" class="btn-control" onclick="resetApp()">Reset</button>
+        <button id="pdf-btn" class="btn-control" onclick="generatePDF()">Salva in PDF</button>
+    </div>
+
+    <h1>Electroral!</h1>
+    <p class="subtitle">Clic o tap su un nome per assegnarlo o rimuoverlo</p>
+
+    <div class="container" id="simulation-content">
+        <div class="stats-panel">
+            <div class="stat-row">
+                <div class="stat-label" style="color: var(--dore-nord)">Daniele Dore</div>
+                <div class="stat-bar-bg"><div class="stat-bar-fill dore-fill" id="bar-dore" style="width: 0%"></div></div>
+                <div class="stat-value" id="val-dore">0 voti (0%)</div>
+            </div>
+            <div class="stat-row">
+                <div class="stat-label" style="color: var(--sanna-nord)">Giovanni Sanna</div>
+                <div class="stat-bar-bg"><div class="stat-bar-fill sanna-fill" id="bar-sanna" style="width: 0%"></div></div>
+                <div class="stat-value" id="val-sanna">0 voti (0%)</div>
+            </div>
+            <div class="stat-row">
+                <div class="stat-label" style="color: var(--piccari-nord)">Virgilio Piccari</div>
+                <div class="stat-bar-bg"><div class="stat-bar-fill piccari-fill" id="bar-piccari" style="width: 0%"></div></div>
+                <div class="stat-value" id="val-piccari">0 voti (0%)</div>
+            </div>
+            <div class="stat-row">
+                <div class="stat-label" style="color: var(--bianca-nord)">Scheda Bianca</div>
+                <div class="stat-bar-bg"><div class="stat-bar-fill bianca-fill" id="bar-bianca" style="width: 0%"></div></div>
+                <div class="stat-value" id="val-bianca">0 voti (0%)</div>
+            </div>
+            <div class="unassigned-count" id="unassigned-text">Da assegnare: 50</div>
+        </div>
+
+        <div class="urns-grid">
+            <div class="urna" id="urna-unassigned">
+                <h3>Da Assegnare</h3>
+                <div class="voter-list" id="list-unassigned"></div>
+            </div>
+            <div class="urna" id="urna-dore">
+                <h3>Dore</h3>
+                <div class="voter-list" id="list-dore"></div>
+            </div>
+            <div class="urna" id="urna-sanna">
+                <h3>Sanna</h3>
+                <div class="voter-list" id="list-sanna"></div>
+            </div>
+            <div class="urna" id="urna-piccari">
+                <h3>Piccari</h3>
+                <div class="voter-list" id="list-piccari"></div>
+            </div>
+            <div class="urna" id="urna-bianca">
+                <h3>Bianca</h3>
+                <div class="voter-list" id="list-bianca"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Stato dell'applicazione con i docenti accademici
+        let state = {
+            unassigned: [
+                {id: 1, name: "Alberto Scorcu"}, {id: 2, name: "Aldo Tilocca"}, {id: 3, name: "Alessandra Brancati"},
+                {id: 4, name: "Alessandra Cabras"}, {id: 5, name: "Alessandro Ponzeletti"}, {id: 6, name: "Antonio Salamone"},
+                {id: 7, name: "Claudio Cavallaro"}, {id: 8, name: "Cristina Orsatti"}, {id: 9, name: "Daniele Dore"},
+                {id: 10, name: "Dario Gessati"}, {id: 11, name: "Davide Bini"}, {id: 12, name: "Davide Fadda"},
+                {id: 13, name: "Davide Manca"}, {id: 14, name: "Davide Mariani"}, {id: 15, name: "Davide Riboli"},
+                {id: 16, name: "Diego Ganga"}, {id: 17, name: "Federico Soro"}, {id: 18, name: "Fortunata Sgrò"},
+                {id: 19, name: "Francesco De Carolis"}, {id: 20, name: "Gian Luca Tartaglia"}, {id: 21, name: "Gianfranco Lopo"},
+                {id: 22, name: "Giovanni Dettori"}, {id: 23, name: "Giovanni Sanna"}, {id: 24, name: "Giuseppina Manca di Mores"},
+                {id: 25, name: "Luca Spano"}, {id: 26, name: "Luisella Pintus"}, {id: 27, name: "Marcellino Garau"},
+                {id: 28, name: "Marcello Cualbu"}, {id: 29, name: "Marco Antonio Pani"}, {id: 30, name: "Marco Mendeni"},
+                {id: 31, name: "Marco Testoni"}, {id: 32, name: "Massimo Bonura"}, {id: 33, name: "Milco Carboni"},
+                {id: 34, name: "Monia Mancusa"}, {id: 35, name: "Narcisa Monni"}, {id: 36, name: "Nicolas Martino"},
+                {id: 37, name: "Oscar Solinas"}, {id: 38, name: "Paola Pintus"}, {id: 39, name: "Paolo Carta"},
+                {id: 40, name: "Pier Paolo Luvoni"}, {id: 41, name: "Pietro Pirino"}, {id: 42, name: "Pinella Marras"},
+                {id: 43, name: "Roberto Satta"}, {id: 44, name: "Sergio Miali"}, {id: 45, name: "Sergio Scavio"},
+                {id: 46, name: "Silvio Farina"}, {id: 47, name: "Simone Ligas"}, {id: 48, name: "Sonia Borsato"},
+                {id: 49, name: "Valeria Brandano"}, {id: 50, name: "Vincenzo Carastro"}
+            ],
+            dore: [],
+            sanna: [],
+            piccari: [],
+            bianca: [],
+            expandedId: null
+        };
+
+        function moveVoter(voterId, targetList) {
+            let voter = null;
+            const lists = ['unassigned', 'dore', 'sanna', 'piccari', 'bianca'];
+            
+            for (let listName of lists) {
+                const index = state[listName].findIndex(v => v.id === voterId);
+                if (index !== -1) {
+                    voter = state[listName].splice(index, 1)[0];
+                    break;
+                }
+            }
+
+            if (voter) {
+                state[targetList].push(voter);
+                state[targetList].sort((a, b) => a.name.localeCompare(b.name));
+            }
+            
+            state.expandedId = null; 
+            render();
+        }
+
+        function toggleExpand(voterId) {
+            state.expandedId = state.expandedId === voterId ? null : voterId;
+            render();
+        }
+
+        function createVoterCard(voter, currentList) {
+            const card = document.createElement('div');
+            card.className = 'voter-card';
+            
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'voter-name';
+            nameDiv.innerText = voter.name;
+            card.appendChild(nameDiv);
+
+            if (currentList === 'unassigned') {
+                if (state.expandedId === voter.id) {
+                    card.classList.add('expanded');
+                }
+                card.onclick = () => toggleExpand(voter.id);
+
+                const actions = document.createElement('div');
+                actions.className = 'action-buttons';
+                
+                const btnD = document.createElement('button');
+                btnD.className = 'btn btn-d'; btnD.innerText = 'Vota Dore';
+                btnD.onclick = (e) => { e.stopPropagation(); moveVoter(voter.id, 'dore'); };
+                
+                const btnS = document.createElement('button');
+                btnS.className = 'btn btn-s'; btnS.innerText = 'Vota Sanna';
+                btnS.onclick = (e) => { e.stopPropagation(); moveVoter(voter.id, 'sanna'); };
+
+                const btnP = document.createElement('button');
+                btnP.className = 'btn btn-p'; btnP.innerText = 'Vota Piccari';
+                btnP.onclick = (e) => { e.stopPropagation(); moveVoter(voter.id, 'piccari'); };
+
+                const btnB = document.createElement('button');
+                btnB.className = 'btn btn-b'; btnB.innerText = 'Scheda Bianca';
+                btnB.onclick = (e) => { e.stopPropagation(); moveVoter(voter.id, 'bianca'); };
+
+                actions.append(btnD, btnS, btnP, btnB);
+                card.appendChild(actions);
+            } else {
+                card.classList.add('assigned-' + currentList);
+                card.title = "Clicca per rimuovere l'assegnazione";
+                card.onclick = () => moveVoter(voter.id, 'unassigned');
+            }
+
+            return card;
+        }
+
+        function render() {
+            document.getElementById('list-unassigned').innerHTML = '';
+            document.getElementById('list-dore').innerHTML = '';
+            document.getElementById('list-sanna').innerHTML = '';
+            document.getElementById('list-piccari').innerHTML = '';
+            document.getElementById('list-bianca').innerHTML = '';
+
+            state.unassigned.forEach(v => document.getElementById('list-unassigned').appendChild(createVoterCard(v, 'unassigned')));
+            state.dore.forEach(v => document.getElementById('list-dore').appendChild(createVoterCard(v, 'dore')));
+            state.sanna.forEach(v => document.getElementById('list-sanna').appendChild(createVoterCard(v, 'sanna')));
+            state.piccari.forEach(v => document.getElementById('list-piccari').appendChild(createVoterCard(v, 'piccari')));
+            state.bianca.forEach(v => document.getElementById('list-bianca').appendChild(createVoterCard(v, 'bianca')));
+
+            const totalAssigned = state.dore.length + state.sanna.length + state.piccari.length + state.bianca.length;
+
+            let pDore = 0, pSanna = 0, pPiccari = 0, pBianca = 0;
+            if (totalAssigned > 0) {
+                pDore = Math.round((state.dore.length / totalAssigned) * 100);
+                pSanna = Math.round((state.sanna.length / totalAssigned) * 100);
+                pPiccari = Math.round((state.piccari.length / totalAssigned) * 100);
+                pBianca = Math.round((state.bianca.length / totalAssigned) * 100);
+            }
+
+            document.getElementById('bar-dore').style.width = pDore + '%';
+            document.getElementById('val-dore').innerText = `${state.dore.length} voti (${pDore}%)`;
+
+            document.getElementById('bar-sanna').style.width = pSanna + '%';
+            document.getElementById('val-sanna').innerText = `${state.sanna.length} voti (${pSanna}%)`;
+
+            document.getElementById('bar-piccari').style.width = pPiccari + '%';
+            document.getElementById('val-piccari').innerText = `${state.piccari.length} voti (${pPiccari}%)`;
+
+            document.getElementById('bar-bianca').style.width = pBianca + '%';
+            document.getElementById('val-bianca').innerText = `${state.bianca.length} voti (${pBianca}%)`;
+
+            document.getElementById('unassigned-text').innerText = 'Da assegnare: ' + state.unassigned.length;
+        }
+
+        function resetApp() {
+            const allVoters = [
+                ...state.unassigned, ...state.dore, ...state.sanna, ...state.piccari, ...state.bianca
+            ];
+
+            allVoters.sort((a, b) => a.id - b.id);
+
+            state = {
+                unassigned: allVoters,
+                dore: [],
+                sanna: [],
+                piccari: [],
+                bianca: [],
+                expandedId: null
+            };
+            
+            render();
+        }
+
+        function generatePDF() {
+            state.expandedId = null;
+            render();
+            
+            const element = document.getElementById('simulation-content');
+            
+            const opt = {
+                margin:       10,
+                filename:     'Electroral.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, bgcolor: '#d08770' }, 
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save();
+        }
+
+        window.onload = render;
+    </script>
+</body>
+</html>
